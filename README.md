@@ -7,7 +7,7 @@ To generate the jobs run following command which creates job's configs and print
     python generate.py
 
 To access jenkins api, you first should login:
-    java -jar jenkins-cli.jar JENKINS_HOST login --username YOUR_NICE_ACCOUNT_LOGIN
+    java -jar jenkins-cli.jar JENKINS_HOST login --username YOUR_ACCOUNT_LOGIN
 
 To update existing job execute following command:
     java -jar jenkins-cli.jar JENKINS_HOST update-job MYJOB < MYJOB.xml
