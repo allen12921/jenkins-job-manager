@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><project>
+  <actions/>
+  <description>Generated job for $JOB_NAME$</description>
+  <logRotator class="hudson.tasks.LogRotator">
+    <daysToKeep>-1</daysToKeep>
+    <numToKeep>-1</numToKeep>
+    <artifactDaysToKeep>-1</artifactDaysToKeep>
+    <artifactNumToKeep>10</artifactNumToKeep>
+  </logRotator>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.queueSorter.PrioritySorterJobProperty plugin="PrioritySorter@2.9">
+      <priority>100</priority>
+    </hudson.queueSorter.PrioritySorterJobProperty>
+    <org.jenkinsci.plugins.mailwatcher.WatcherJobProperty plugin="mail-watcher-plugin@1.8">
+      <watcherAddresses>amerezhi@cern.ch</watcherAddresses>
+    </org.jenkinsci.plugins.mailwatcher.WatcherJobProperty>
+    <com.sonyericsson.rebuild.RebuildSettings plugin="rebuild@1.22">
+      <autoRebuild>false</autoRebuild>
+    </com.sonyericsson.rebuild.RebuildSettings>
+    <org.jvnet.hudson.plugins.shelveproject.ShelveProjectProperty plugin="shelve-project-plugin@1.5"/>
+  </properties>
+  <scm class="hudson.scm.SubversionSCM" plugin="subversion@2.5">
+    <locations>
+      <hudson.scm.SubversionSCM_-ModuleLocation>
+        <remote>$JOB_PATH$</remote>
+        <credentialsId>ace03518-5b72-4631-8d8c-0d6824b5bd39</credentialsId>
+        <local>.</local>
+        <depthOption>infinity</depthOption>
+        <ignoreExternalsOption>false</ignoreExternalsOption>
+      </hudson.scm.SubversionSCM_-ModuleLocation>
+    </locations>
+    <excludedRegions/>
+    <includedRegions/>
+    <excludedUsers/>
+    <excludedRevprop/>
+    <excludedCommitMessages/>
+    <workspaceUpdater class="hudson.scm.subversion.CheckoutUpdater"/>
+    <ignoreDirPropChanges>false</ignoreDirPropChanges>
+    <filterChangelog>false</filterChangelog>
+  </scm>
+  <assignedNode>cvl-ci-64-2</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <jdk>Oracle Java 1.8</jdk>
+  <triggers>
+    <hudson.triggers.SCMTrigger>
+      <spec>H/15 * * * *</spec>
+      <ignorePostCommitHooks>false</ignorePostCommitHooks>
+    </hudson.triggers.SCMTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Maven>
+      <targets>clean package</targets>
+      <mavenName>Maven-3.2.x</mavenName>
+      <usePrivateRepository>false</usePrivateRepository>
+      <settings class="org.jenkinsci.plugins.configfiles.maven.job.MvnSettingsProvider" plugin="config-file-provider@2.7.5">
+        <settingsConfigId>org.jenkinsci.plugins.configfiles.maven.MavenSettingsConfig1385582081807</settingsConfigId>
+      </settings>
+      <globalSettings class="jenkins.mvn.DefaultGlobalSettingsProvider"/>
+    </hudson.tasks.Maven>
+  </builders>
+  <publishers>
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>target/*zip</artifacts>
+      <allowEmptyArchive>false</allowEmptyArchive>
+      <onlyIfSuccessful>false</onlyIfSuccessful>
+      <fingerprint>false</fingerprint>
+      <defaultExcludes>true</defaultExcludes>
+    </hudson.tasks.ArtifactArchiver>
+  </publishers>
+  <buildWrappers>
+    <hudson.plugins.release.ReleaseWrapper plugin="release@2.4.1">
+      <releaseVersionTemplate/>
+      <doNotKeepLog>true</doNotKeepLog>
+      <overrideBuildParameters>false</overrideBuildParameters>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>RELEASE_VERSION</name>
+          <description>This is the version number for the release (e.g.: 1.0-beta-01) &lt;br/&gt;
+&lt;b&gt;NOTE:&lt;/b&gt; The version number of the BETA releases &lt;b&gt;must contain&lt;/b&gt; "alpha" or "beta". &lt;br/&gt;
+The version number of the OFFICIAL releases &lt;b&gt;must NOT contain&lt;/b&gt; "alpha" or "beta".&lt;br/&gt;</description>
+          <defaultValue/>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+      <preBuildSteps>
+        <hudson.plugins.groovy.SystemGroovy plugin="groovy@1.24">
+          <scriptSource class="hudson.plugins.groovy.StringScriptSource">
+            <command>import hudson.model.*;
+import hudson.util.*;
+
+def build = Thread.currentThread().executable
+
+def releaseVersion = build.buildVariableResolver.resolve("RELEASE_VERSION")
+def releaseType = releaseVersion =~ /^[\d\.]+$/ ? "official-release" : "beta-release"
+
+def pa = new ParametersAction([
+  new StringParameterValue("ReleaseType", releaseType)
+])
+build.addAction(pa)
+</command>
+          </scriptSource>
+          <bindings/>
+          <classpath/>
+        </hudson.plugins.groovy.SystemGroovy>
+      </preBuildSteps>
+      <postBuildSteps/>
+      <postSuccessfulBuildSteps>
+        <hudson.tasks.Maven>
+          <targets>release:prepare release:perform -X -P$ReleaseType</targets>
+          <mavenName>Maven-3.2.x</mavenName>
+          <properties>releaseVersion=$RELEASE_VERSION
+autoVersionSubmodules=true</properties>
+          <usePrivateRepository>false</usePrivateRepository>
+          <settings class="org.jenkinsci.plugins.configfiles.maven.job.MvnSettingsProvider" plugin="config-file-provider@2.7.5">
+            <settingsConfigId>org.jenkinsci.plugins.configfiles.maven.MavenSettingsConfig1385582081807</settingsConfigId>
+          </settings>
+          <globalSettings class="jenkins.mvn.DefaultGlobalSettingsProvider"/>
+        </hudson.tasks.Maven>
+      </postSuccessfulBuildSteps>
+      <postFailedBuildSteps/>
+    </hudson.plugins.release.ReleaseWrapper>
+  </buildWrappers>
+</project>
